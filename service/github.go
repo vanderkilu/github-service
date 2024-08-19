@@ -51,7 +51,6 @@ func (svc *service) CreateRepository(ctx context.Context, owner, repo string) er
 	if err != nil {
 		return fmt.Errorf("CreateRepository: %w", err)
 	}
-	fmt.Println("Repository saved successfully")
 	return nil
 }
 

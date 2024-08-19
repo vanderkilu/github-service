@@ -47,3 +47,7 @@ where r.repo_full_name='chromium/chromium'
 ```
 
 
+### NOTE
+Uses goose for migration https://github.com/pressly/goose
+and sqlc (https://docs.sqlc.dev/en/stable/tutorials/getting-started-postgresql.html) for generating type safe sql
+
