@@ -27,5 +27,6 @@ bin/
 !.vscode/extensions.json
 
 # OS specific files
+.DS_Store
 .DS_Store/*
 
