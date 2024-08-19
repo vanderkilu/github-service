@@ -68,7 +68,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 		return fmt.Errorf("GetLastCommitShaError: %w", err)
 	}
 
-	//configurable param to enable us pull commits from that sha
+	//configurable param to enable us pull commits since that sha
 	if sha != "" {
 		opt.SHA = sha
 		fmt.Println("Starting from SHA...", sha)
@@ -87,7 +87,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 				// Calculate the sleep duration until the rate limit resets
 				now := time.Now()
 				resetTime := rateLimitError.Rate.Reset
-				sleepDuration := resetTime.Sub(now)          
+				sleepDuration := resetTime.Sub(now)  
 
 				log.Printf("Rate limit exceeded. Sleeping for %v...\n", sleepDuration)
 				time.Sleep(sleepDuration)
@@ -116,7 +116,6 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 			if err != nil {
 				return fmt.Errorf("CreateCommitError: %w", err)
 			}
-			fmt.Printf("Processed commit %s - %s successfully\n", *commit.SHA, *commit.Commit.Message)
 		}
 		opt.Page = resp.NextPage
 	}

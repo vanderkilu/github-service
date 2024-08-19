@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/google/go-github/v63/github"
 	"github.com/jackc/pgx/v4"
@@ -11,7 +12,14 @@ import (
 	"github.com/vanderkilu/github-service/service"
 )
 
-
+func convertStringToTime(timeString string) (*time.Time) {
+    layout := "2006-01-02T15:04:05Z"
+    parsedTime, err := time.Parse(layout, timeString)
+    if err != nil {
+        return nil
+    }
+    return &parsedTime
+}
 
 func CronMonitorRepo() *cli.Command {
 	command := cli.Command{
@@ -29,7 +37,9 @@ func CronMonitorRepo() *cli.Command {
 
 			srv := service.New(postgresql.NewErrNoRowsQueries(postgresql.New(conn)), githubClient)
 
-			return srv.MonitorRepo(c.Context, os.Getenv("OWNER"), os.Getenv("REPO"), nil)
+			time := convertStringToTime(os.Getenv("SINCE"))
+			
+			return srv.MonitorRepo(c.Context, os.Getenv("OWNER"), os.Getenv("REPO"), time)
 		},
 	}
 	return &command
