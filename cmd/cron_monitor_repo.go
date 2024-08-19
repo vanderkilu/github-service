@@ -12,13 +12,13 @@ import (
 	"github.com/vanderkilu/github-service/service"
 )
 
-func convertStringToTime(timeString string) (*time.Time) {
-    layout := "2006-01-02T15:04:05Z"
-    parsedTime, err := time.Parse(layout, timeString)
-    if err != nil {
-        return nil
-    }
-    return &parsedTime
+func convertStringToTime(timeString string) *time.Time {
+	layout := "2006-01-02T15:04:05Z"
+	parsedTime, err := time.Parse(layout, timeString)
+	if err != nil {
+		return nil
+	}
+	return &parsedTime
 }
 
 func CronMonitorRepo() *cli.Command {
@@ -34,11 +34,10 @@ func CronMonitorRepo() *cli.Command {
 
 			githubClient := github.NewClient(nil)
 
-
 			srv := service.New(postgresql.NewErrNoRowsQueries(postgresql.New(conn)), githubClient)
 
 			time := convertStringToTime(os.Getenv("SINCE"))
-			
+
 			return srv.MonitorRepo(c.Context, os.Getenv("OWNER"), os.Getenv("REPO"), time)
 		},
 	}

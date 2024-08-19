@@ -12,40 +12,40 @@ import (
 )
 
 type RepoCommit struct {
-	SHA string
+	SHA     string
 	Message string
-	Author string
-	URL string
-	Date time.Time
+	Author  string
+	URL     string
+	Date    time.Time
 }
 
 func parseCommit(commit *github.RepositoryCommit) RepoCommit {
 	repoCommit := RepoCommit{SHA: *commit.SHA, URL: *commit.URL}
-	if (commit.Commit != nil) {
+	if commit.Commit != nil {
 		repoCommit.Message = *commit.Commit.Message
 		repoCommit.Author = *commit.Commit.Author.Email
 		repoCommit.Date = commit.Commit.Author.Date.Time
 	}
 	return repoCommit
-} 
+}
 
 func (svc *service) CreateRepository(ctx context.Context, owner, repo string) error {
-	repository, _,  err := svc.githubClient.Repositories.Get(ctx, owner, repo)
+	repository, _, err := svc.githubClient.Repositories.Get(ctx, owner, repo)
 	if err != nil {
 		return fmt.Errorf("GetRepositoryFromGithubError: %w", err)
 	}
 	err = svc.querier.CreateRepository(ctx, postgresql.CreateRepositoryParams{
-		Description: *repository.Description,
-		Url: *repository.URL,
-		Language: *repository.Language,
-		RepoName: *repository.Name,
-		RepoFullName: *repository.FullName,
-		ForksCount:  null.IntFrom(int64(*repository.ForksCount)),
-		StarsCount: null.IntFrom(int64(*repository.StargazersCount)),
+		Description:     *repository.Description,
+		Url:             *repository.URL,
+		Language:        *repository.Language,
+		RepoName:        *repository.Name,
+		RepoFullName:    *repository.FullName,
+		ForksCount:      null.IntFrom(int64(*repository.ForksCount)),
+		StarsCount:      null.IntFrom(int64(*repository.StargazersCount)),
 		OpenIssuesCount: null.IntFrom(int64(*repository.OpenIssuesCount)),
-		WatchersCount: null.IntFrom(int64(*repository.WatchersCount)),
-		CreatedAt: repository.CreatedAt.Time,
-		UpdatedAt: repository.UpdatedAt.Time,
+		WatchersCount:   null.IntFrom(int64(*repository.WatchersCount)),
+		CreatedAt:       repository.CreatedAt.Time,
+		UpdatedAt:       repository.UpdatedAt.Time,
 	})
 
 	if err != nil {
@@ -58,10 +58,10 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 	opt := github.CommitsListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 	}
-	// Get last commit, if it is the first time 
+	// Get last commit, if it is the first time
 	// application is running sha will be empty
-	// we will use this last commit sha to avoid pulling the 
-	// same commit twice 
+	// we will use this last commit sha to avoid pulling the
+	// same commit twice
 	sha, err := svc.querier.GetLastCommitSha(ctx)
 	if err != nil {
 		return fmt.Errorf("GetLastCommitShaError: %w", err)
@@ -77,7 +77,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 	if since != nil {
 		opt.Since = *since
 	}
-	//handle pagination 
+	//handle pagination
 	for {
 		commits, resp, err := svc.githubClient.Repositories.ListCommits(ctx, owner, repo, &opt)
 		//handle rate limits
@@ -86,7 +86,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 				// Calculate the sleep duration until the rate limit resets
 				now := time.Now()
 				resetTime := rateLimitError.Rate.Reset
-				sleepDuration := resetTime.Sub(now)  
+				sleepDuration := resetTime.Sub(now)
 
 				log.Printf("Rate limit exceeded. Sleeping for %v...\n", sleepDuration)
 				time.Sleep(sleepDuration)
@@ -104,13 +104,13 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 
 			//This stores only unique commits(using the sha)
 			repoCommit := parseCommit(commit)
-			err= svc.querier.CreateCommit(ctx, postgresql.CreateCommitParams{
-				Sha: repoCommit.SHA,
+			err = svc.querier.CreateCommit(ctx, postgresql.CreateCommitParams{
+				Sha:          repoCommit.SHA,
 				RepoFullName: fmt.Sprintf("%s/%s", owner, repo),
-				Message: repoCommit.Message,
-				Author: repoCommit.Author,
-				Url: repoCommit.URL,
-				Date: repoCommit.Date,
+				Message:      repoCommit.Message,
+				Author:       repoCommit.Author,
+				Url:          repoCommit.URL,
+				Date:         repoCommit.Date,
 			})
 			if err != nil {
 				return fmt.Errorf("CreateCommitError: %w", err)
@@ -121,7 +121,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 	return nil
 }
 
-func(svc *service) MonitorRepo(ctx context.Context, owner, repo string, since *time.Time) error {
+func (svc *service) MonitorRepo(ctx context.Context, owner, repo string, since *time.Time) error {
 	err := svc.CreateRepository(ctx, owner, repo)
 	if err != nil {
 		return err

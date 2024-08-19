@@ -14,17 +14,15 @@ type Github interface {
 	MonitorRepo(ctx context.Context, owner, repo string, since *time.Time) error
 }
 
-
-
 type service struct {
-	querier postgresql.Querier
+	querier      postgresql.Querier
 	githubClient *github.Client
 }
 
 // New return service struct
 func New(querier postgresql.Querier, githubClient *github.Client) *service {
 	return &service{
-		querier:        querier,
-		githubClient:  githubClient,
+		querier:      querier,
+		githubClient: githubClient,
 	}
 }
