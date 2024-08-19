@@ -11,6 +11,24 @@ import (
 	"gopkg.in/guregu/null.v4"
 )
 
+type RepoCommit struct {
+	SHA string
+	Message string
+	Author string
+	URL string
+	Date time.Time
+}
+
+func parseCommit(commit *github.RepositoryCommit) RepoCommit {
+	repoCommit := RepoCommit{SHA: *commit.SHA, URL: *commit.URL}
+	if (commit.Commit != nil) {
+		repoCommit.Message = *commit.Commit.Message
+		repoCommit.Author = *commit.Commit.Author.Email
+		repoCommit.Date = commit.Commit.Author.Date.Time
+	}
+	return repoCommit
+} 
+
 func (svc *service) CreateRepository(ctx context.Context, owner, repo string) error {
 	repository, _,  err := svc.githubClient.Repositories.Get(ctx, owner, repo)
 	if err != nil {
@@ -33,6 +51,7 @@ func (svc *service) CreateRepository(ctx context.Context, owner, repo string) er
 	if err != nil {
 		return fmt.Errorf("CreateRepository: %w", err)
 	}
+	fmt.Println("Repository saved successfully")
 	return nil
 }
 
@@ -52,6 +71,7 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 	//configurable param to enable us pull commits from that sha
 	if sha != "" {
 		opt.SHA = sha
+		fmt.Println("Starting from SHA...", sha)
 	}
 
 	//configurable time since to pull commits
@@ -65,8 +85,9 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 		if err != nil {
 			if rateLimitError, ok := err.(*github.RateLimitError); ok {
 				// Calculate the sleep duration until the rate limit resets
-				resetTime := rateLimitError.Rate.Reset.Time
-				sleepDuration := time.Until(resetTime)
+				now := time.Now()
+				resetTime := rateLimitError.Rate.Reset
+				sleepDuration := resetTime.Sub(now)          
 
 				log.Printf("Rate limit exceeded. Sleeping for %v...\n", sleepDuration)
 				time.Sleep(sleepDuration)
@@ -81,18 +102,21 @@ func (svc *service) ProcessCommits(ctx context.Context, owner, repo string, sinc
 		}
 
 		for _, commit := range commits {
+
 			//This stores only unique commits(using the sha)
+			repoCommit := parseCommit(commit)
 			err= svc.querier.CreateCommit(ctx, postgresql.CreateCommitParams{
-				Sha: *commit.SHA,
-				RepoFullName: fmt.Sprintf("%s%s", owner, repo),
-				Message: *commit.Commit.Message,
-				Author: *commit.Author.Email,
-				Url: *commit.URL,
-				Date: commit.Committer.CreatedAt.Time,
+				Sha: repoCommit.SHA,
+				RepoFullName: fmt.Sprintf("%s/%s", owner, repo),
+				Message: repoCommit.Message,
+				Author: repoCommit.Author,
+				Url: repoCommit.URL,
+				Date: repoCommit.Date,
 			})
 			if err != nil {
 				return fmt.Errorf("CreateCommitError: %w", err)
 			}
+			fmt.Printf("Processed commit %s - %s successfully\n", *commit.SHA, *commit.Commit.Message)
 		}
 		opt.Page = resp.NextPage
 	}

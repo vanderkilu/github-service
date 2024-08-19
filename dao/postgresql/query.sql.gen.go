@@ -13,11 +13,10 @@ import (
 )
 
 const createCommit = `-- name: CreateCommit :exec
-INSERT INTO commit (id, repo_full_name, sha, message, url, author, date) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (sha) DO NOTHING
+INSERT INTO commit (repo_full_name, sha, message, url, author, date) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (sha) DO NOTHING
 `
 
 type CreateCommitParams struct {
-	ID           int32     `json:"id"`
 	RepoFullName string    `json:"repo_full_name"`
 	Sha          string    `json:"sha"`
 	Message      string    `json:"message"`
@@ -28,7 +27,6 @@ type CreateCommitParams struct {
 
 func (q *Queries) CreateCommit(ctx context.Context, arg CreateCommitParams) error {
 	_, err := q.db.Exec(ctx, createCommit,
-		arg.ID,
 		arg.RepoFullName,
 		arg.Sha,
 		arg.Message,
@@ -40,11 +38,10 @@ func (q *Queries) CreateCommit(ctx context.Context, arg CreateCommitParams) erro
 }
 
 const createRepository = `-- name: CreateRepository :exec
-INSERT INTO repository (id, description, url, language,repo_name, repo_full_name, forks_count, stars_count, open_issues_count, watchers_count,created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT (repo_full_name) DO NOTHING
+INSERT INTO repository (description, url, language,repo_name, repo_full_name, forks_count, stars_count, open_issues_count, watchers_count,created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (repo_full_name) DO NOTHING
 `
 
 type CreateRepositoryParams struct {
-	ID              int32     `json:"id"`
 	Description     string    `json:"description"`
 	Url             string    `json:"url"`
 	Language        string    `json:"language"`
@@ -60,7 +57,6 @@ type CreateRepositoryParams struct {
 
 func (q *Queries) CreateRepository(ctx context.Context, arg CreateRepositoryParams) error {
 	_, err := q.db.Exec(ctx, createRepository,
-		arg.ID,
 		arg.Description,
 		arg.Url,
 		arg.Language,

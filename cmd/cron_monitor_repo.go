@@ -18,7 +18,6 @@ func CronMonitorRepo() *cli.Command {
 		Name:  "cron-monitor-repo",
 		Usage: "cli cron to monitor and run repo",
 		Action: func(c *cli.Context) error {
-
 			conn, err := pgx.Connect(c.Context, os.Getenv("DATABASE_URL"))
 			if err != nil {
 				log.Fatalf("Failed to connect to the database: %v", err)
@@ -28,7 +27,7 @@ func CronMonitorRepo() *cli.Command {
 			githubClient := github.NewClient(nil)
 
 
-			srv := service.New(postgresql.New(conn), githubClient)
+			srv := service.New(postgresql.NewErrNoRowsQueries(postgresql.New(conn)), githubClient)
 
 			return srv.MonitorRepo(c.Context, os.Getenv("OWNER"), os.Getenv("REPO"), nil)
 		},
